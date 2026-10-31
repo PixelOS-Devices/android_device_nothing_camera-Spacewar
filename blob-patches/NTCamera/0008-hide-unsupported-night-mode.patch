@@ -1,0 +1,81 @@
+--- a/smali_classes2/com/nothing/common/utils/ProductConfig.smali
++++ b/smali_classes2/com/nothing/common/utils/ProductConfig.smali
+@@ -799,12 +799,8 @@
+     .line 115
+     sput-boolean v0, Lcom/nothing/common/utils/ProductConfig;->useHalBokeh:Z
+ 
+-    const-string v1, "FEATURE_MEDIA_CAMERA_NIGHTSHOT_SUPPORTED"
+-
+     .line 117
+-    invoke-static {v1, v3}, Lcom/nothing/common/utils/ProductConfig;->isSupportFeature(Ljava/lang/String;Ljava/lang/String;)Z
+-
+-    move-result v1
++    const/4 v1, 0x0
+ 
+     sput-boolean v1, Lcom/nothing/common/utils/ProductConfig;->isSupportNight:Z
+ 
+--- a/smali_classes2/com/nothing/camera/ui/uinode/CameraBottomFunctionUINode.smali
++++ b/smali_classes2/com/nothing/camera/ui/uinode/CameraBottomFunctionUINode.smali
+@@ -366,6 +366,27 @@
+     return-object p0
+ .end method
+ 
++.method private filterUnsupportedNightScene(Lcom/nothing/common/utils/AsdHelper$AsdSceneType;)Lcom/nothing/common/utils/AsdHelper$AsdSceneType;
++    .locals 1
++
++    iget v0, p0, Lcom/nothing/camera/ui/uinode/CameraBottomFunctionUINode;->mCurrentMode:I
++
++    if-nez v0, :cond_0
++
++    sget-boolean v0, Lcom/nothing/common/utils/ProductConfig;->isSupportNight:Z
++
++    if-nez v0, :cond_0
++
++    sget-object v0, Lcom/nothing/common/utils/AsdHelper$AsdSceneType;->NIGHT:Lcom/nothing/common/utils/AsdHelper$AsdSceneType;
++
++    if-ne p1, v0, :cond_0
++
++    sget-object p1, Lcom/nothing/common/utils/AsdHelper$AsdSceneType;->AUTO:Lcom/nothing/common/utils/AsdHelper$AsdSceneType;
++
++    :cond_0
++    return-object p1
++.end method
++
+ .method private handleAsdMutexWithSmb(I)V
+     .locals 5
+ 
+@@ -4773,6 +4794,10 @@
+ 
+     move-result-object v0
+ 
++    invoke-direct {p0, v0}, Lcom/nothing/camera/ui/uinode/CameraBottomFunctionUINode;->filterUnsupportedNightScene(Lcom/nothing/common/utils/AsdHelper$AsdSceneType;)Lcom/nothing/common/utils/AsdHelper$AsdSceneType;
++
++    move-result-object v0
++
+     const/4 v1, 0x2
+ 
+     .line 578
+--- a/smali/com/nothing/camera/mode/NightModeHelper.smali
++++ b/smali/com/nothing/camera/mode/NightModeHelper.smali
+@@ -4177,6 +4177,10 @@
+ 
+     move-result p1
+ 
++    sget-boolean p2, Lcom/nothing/common/utils/ProductConfig;->isSupportNight:Z
++
++    and-int/2addr p1, p2
++
+     iput-boolean p1, p0, Lcom/nothing/camera/mode/NightModeHelper;->mSuperNightOn:Z
+ 
+     return-void
+@@ -4825,6 +4829,10 @@
+ 
+     move-result p1
+ 
++    sget-boolean v0, Lcom/nothing/common/utils/ProductConfig;->isSupportNight:Z
++
++    and-int/2addr p1, v0
++
+     iput-boolean p1, p0, Lcom/nothing/camera/mode/NightModeHelper;->mSuperNightOn:Z
+ 
+     :cond_0
