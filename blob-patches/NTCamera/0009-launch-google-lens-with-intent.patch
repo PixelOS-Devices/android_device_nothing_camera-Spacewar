@@ -1,0 +1,199 @@
+--- a/smali_classes2/com/nothing/camera/ui/uinode/GoogleLensManager.smali
++++ b/smali_classes2/com/nothing/camera/ui/uinode/GoogleLensManager.smali
+@@ -18,6 +18,8 @@
+ # instance fields
+ .field private volatile mAvailable:Z
+ 
++.field private final mContext:Landroid/content/Context;
++
+ .field private mGoogleLensListener:Lcom/nothing/camera/ui/uinode/GoogleLensManager$IGoogleLensListener;
+ 
+ .field private mHasBindLensService:Z
+@@ -78,13 +80,64 @@
+     iput-boolean v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mHasBindLensService:Z
+ 
+     .line 31
+-    new-instance v0, Lcom/google/lens/sdk/LensApi;
+-
+-    invoke-direct {v0, p1}, Lcom/google/lens/sdk/LensApi;-><init>(Landroid/content/Context;)V
+-
+-    iput-object v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mLensApi:Lcom/google/lens/sdk/LensApi;
+-
+-    return-void
++    iput-object p1, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mContext:Landroid/content/Context;
++
++    return-void
++.end method
++
++.method private static createLensIntent()Landroid/content/Intent;
++    .locals 3
++
++    const-string v0, "android.intent.action.VIEW"
++
++    const-string v1, "google://lens"
++
++    invoke-static {v1}, Landroid/net/Uri;->parse(Ljava/lang/String;)Landroid/net/Uri;
++
++    move-result-object v1
++
++    new-instance v2, Landroid/content/Intent;
++
++    invoke-direct {v2, v0, v1}, Landroid/content/Intent;-><init>(Ljava/lang/String;Landroid/net/Uri;)V
++
++    const-string v0, "com.google.android.googlequicksearchbox"
++
++    invoke-virtual {v2, v0}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
++
++    return-object v2
++.end method
++
++.method public static launchLensIntent(Landroid/app/Activity;)Z
++    .locals 3
++
++    :try_start_0
++    invoke-static {}, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->createLensIntent()Landroid/content/Intent;
++
++    move-result-object v0
++
++    const/4 v1, 0x0
++
++    invoke-virtual {p0, v0, v1}, Landroid/app/Activity;->startActivityForResult(Landroid/content/Intent;I)V
++    :try_end_0
++    .catch Landroid/content/ActivityNotFoundException; {:try_start_0 .. :try_end_0} :catch_0
++    .catch Ljava/lang/SecurityException; {:try_start_0 .. :try_end_0} :catch_0
++
++    const/4 v0, 0x1
++
++    return v0
++
++    :catch_0
++    move-exception v0
++
++    const-string v1, "GoogleLensManager"
++
++    const-string v2, "Unable to launch Google Lens"
++
++    invoke-static {v1, v2, v0}, Lcom/nothing/common/utils/LogUtil;->e(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
++
++    const/4 v0, 0x0
++
++    return v0
+ .end method
+ 
+ 
+@@ -131,28 +184,42 @@
+     .line 58
+     :cond_0
+     :try_start_1
+-    iget-object v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mLensApi:Lcom/google/lens/sdk/LensApi;
++    const/4 v0, 0x1
++
++    iput-boolean v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mInited:Z
++
++    iget-object v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mContext:Landroid/content/Context;
++
++    invoke-virtual {v0}, Landroid/content/Context;->getPackageManager()Landroid/content/pm/PackageManager;
++
++    move-result-object v0
++
++    invoke-static {}, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->createLensIntent()Landroid/content/Intent;
++
++    move-result-object v1
++
++    const/high16 v2, 0x10000
++
++    invoke-virtual {v0, v1, v2}, Landroid/content/pm/PackageManager;->resolveActivity(Landroid/content/Intent;I)Landroid/content/pm/ResolveInfo;
++
++    move-result-object v0
++
++    const/4 v2, 0x1
+ 
+     if-eqz v0, :cond_1
+ 
+-    const/4 v0, 0x1
+-
+-    .line 59
+-    iput-boolean v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mInited:Z
+-
+-    .line 60
+-    iget-object v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mLensApi:Lcom/google/lens/sdk/LensApi;
+-
++    const/4 v2, 0x0
++
++    :cond_1
+     new-instance v1, Lcom/nothing/camera/ui/uinode/GoogleLensManager$1;
+ 
+     invoke-direct {v1, p0}, Lcom/nothing/camera/ui/uinode/GoogleLensManager$1;-><init>(Lcom/nothing/camera/ui/uinode/GoogleLensManager;)V
+ 
+-    invoke-virtual {v0, v1}, Lcom/google/lens/sdk/LensApi;->checkLensAvailability(Lcom/google/lens/sdk/LensApi$LensAvailabilityCallback;)V
++    invoke-virtual {v1, v2}, Lcom/nothing/camera/ui/uinode/GoogleLensManager$1;->onAvailabilityStatusFetched(I)V
+     :try_end_1
+     .catchall {:try_start_1 .. :try_end_1} :catchall_0
+ 
+     .line 100
+-    :cond_1
+     monitor-exit p0
+ 
+     return-void
+@@ -322,10 +389,6 @@
+     invoke-static {v1, v0}, Lcom/nothing/common/utils/LogUtil;->d(Ljava/lang/String;Ljava/lang/String;)V
+ 
+     .line 104
+-    iget-object v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mLensApi:Lcom/google/lens/sdk/LensApi;
+-
+-    if-eqz v0, :cond_1
+-
+     iget-boolean v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mAvailable:Z
+ 
+     if-eqz v0, :cond_1
+@@ -359,13 +422,7 @@
+ 
+     .line 129
+     :cond_0
+-    iget-object v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->mLensApi:Lcom/google/lens/sdk/LensApi;
+-
+-    new-instance v2, Lcom/nothing/camera/ui/uinode/GoogleLensManager$3;
+-
+-    invoke-direct {v2, p0}, Lcom/nothing/camera/ui/uinode/GoogleLensManager$3;-><init>(Lcom/nothing/camera/ui/uinode/GoogleLensManager;)V
+-
+-    invoke-virtual {v0, p1, v2}, Lcom/google/lens/sdk/LensApi;->launchLensActivity(Landroid/app/Activity;Lcom/google/lens/sdk/LensApi$LensLaunchStatusCallback;)V
++    invoke-static {p1}, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->launchLensIntent(Landroid/app/Activity;)Z
+ 
+     .line 134
+     :goto_0
+--- a/smali_classes2/com/nothing/camera/ui/uinode/GoogleLensManager$2.smali
++++ b/smali_classes2/com/nothing/camera/ui/uinode/GoogleLensManager$2.smali
+@@ -63,27 +63,18 @@
+ .end method
+ 
+ .method public onDismissSucceeded()V
+-    .locals 3
+-
+-    .line 111
+-    iget-object v0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager$2;->this$0:Lcom/nothing/camera/ui/uinode/GoogleLensManager;
+-
+-    invoke-static {v0}, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->-$$Nest$fgetmLensApi(Lcom/nothing/camera/ui/uinode/GoogleLensManager;)Lcom/google/lens/sdk/LensApi;
+-
+-    move-result-object v0
++    .locals 2
+ 
+     iget-object v1, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager$2;->val$activity:Landroid/app/Activity;
+ 
+-    new-instance v2, Lcom/nothing/camera/ui/uinode/GoogleLensManager$2$1;
++    invoke-static {v1}, Lcom/nothing/camera/ui/uinode/GoogleLensManager;->launchLensIntent(Landroid/app/Activity;)Z
+ 
+-    invoke-direct {v2, p0}, Lcom/nothing/camera/ui/uinode/GoogleLensManager$2$1;-><init>(Lcom/nothing/camera/ui/uinode/GoogleLensManager$2;)V
++    move-result v0
+ 
+-    invoke-virtual {v0, v1, v2}, Lcom/google/lens/sdk/LensApi;->launchLensActivity(Landroid/app/Activity;Lcom/google/lens/sdk/LensApi$LensLaunchStatusCallback;)V
++    if-eqz v0, :cond_0
+ 
+-    .line 115
+-    iget-object p0, p0, Lcom/nothing/camera/ui/uinode/GoogleLensManager$2;->val$activity:Landroid/app/Activity;
++    invoke-virtual {v1}, Landroid/app/Activity;->finishAffinity()V
+ 
+-    invoke-virtual {p0}, Landroid/app/Activity;->finishAffinity()V
+-
++    :cond_0
+     return-void
+ .end method
